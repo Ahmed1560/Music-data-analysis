@@ -1,0 +1,98 @@
+*******************************************************FIRST QUERY********************************************************
+
+SELECT Name,
+       BillingCountry,
+       ROUND(100.0 * total_Quantity /
+               (SELECT COUNT(*)
+                FROM InvoiceLine), 2) AS 'PCT%'
+FROM
+  (SELECT G.Name,
+          COUNT(*) AS total_Quantity,
+          BillingCountry
+   FROM InvoiceLine IL
+   JOIN Track Tr ON IL.TrackId = Tr.TrackId
+   JOIN Genre G ON Tr.GenreId = G.GenreId
+   JOIN Invoice I ON I.InvoiceId = IL.InvoiceId
+   GROUP BY G.Name
+   ORDER BY total_Quantity DESC)
+
+********************************************************SECOND QUERY*****************************************************
+
+SELECT Name AS Type_of_Media,
+       ROUND(100.0 * total_Quantity /
+               (SELECT COUNT(*)
+                FROM InvoiceLine), 2) AS 'PCT%'
+FROM
+  (SELECT M_T.Name,
+          COUNT(*) AS total_Quantity
+   FROM MediaType M_T
+   JOIN track Tr ON Tr.mediatypeid = M_T.mediatypeid
+   JOIN invoiceline Inv_L ON Inv_L .trackid = Tr.trackid
+   GROUP BY M_T.Name
+   ORDER BY 2 DESC)
+
+**********************************************************THIRD QUERY*******************************************************
+
+SELECT *,
+       ROUND(100.0 * total_Quantity /
+               (SELECT COUNT(*)
+                FROM InvoiceLine), 2) AS 'PCT%'
+FROM
+  (SELECT A.Name as 'Artist Name',
+          COUNT(*) AS total_Quantity,
+          BillingCountry
+   FROM Artist A
+   JOIN Album AL ON A.ArtistId = AL.ArtistId
+   JOIN Track Tr ON AL.AlbumId = Tr.AlbumId
+   JOIN InvoiceLine INV_L ON Inv_L .trackid = Tr.trackid
+   JOIN Invoice I ON INV_L.InvoiceId = I.InvoiceId
+   GROUP BY I.BillingCountry
+   ORDER BY total_Quantity DESC)
+
+***********************************************************FOURTH QUERY********************************************************
+
+WITH First_Table AS
+  (SELECT Cust.Country,
+          SUM(Inv.Total) Total_spent
+   FROM Customer Cust
+   JOIN Invoice Inv ON Cust.CustomerId = Inv.CustomerId
+   GROUP BY Cust.CustomerId)
+SELECT First_Table.*
+FROM First_Table
+JOIN
+  (SELECT Country,
+          MAX(Total_spent) AS Max_Total_Spent
+   FROM First_Table
+   GROUP BY Country) Second_Table ON First_Table.Country = Second_Table.Country
+WHERE First_Table.Total_spent = Second_Table.Max_Total_Spent
+ORDER BY Total_spent DESC;
+
+*************************************************************FIFTH QUERY****************************************************
+
+SELECT Gnr.NAME GENRE,
+       SUM(Inv_L.UNITPRICE) Total_Spent
+FROM CUSTOMER Cust
+JOIN INVOICE INV ON INV.CUSTOMERID = Cust.CUSTOMERID
+JOIN INVOICELINE Inv_L ON Inv_L.INVOICEID = INV.INVOICEID
+JOIN TRACK Tr ON Tr.TRACKID = Inv_L.TRACKID
+JOIN GENRE Gnr ON Gnr.GENREID = Tr.GENREID
+GROUP BY Gnr.Name
+ORDER BY Total_Spent DESC
+
+************************************************************SIXTH QUERY**************************************************
+
+SELECT Name,
+       ROUND(100.0 * total_Quantity /
+               (SELECT COUNT(*)
+                FROM InvoiceLine), 2) AS 'PCT%'
+FROM
+  (SELECT Gnr.Name,
+          COUNT(*) AS total_Quantity
+   FROM INVOICE INV
+   JOIN Customer Cust ON INV.CUSTOMERID = Cust.CUSTOMERID
+   JOIN INVOICELINE Inv_L ON Inv_L.INVOICEID = INV.INVOICEID
+   JOIN TRACK Tr ON Tr.TRACKID = Inv_L.TRACKID
+   JOIN GENRE Gnr ON Gnr.GENREID = Tr.GENREID
+   GROUP BY Gnr.Name
+   ORDER BY total_Quantity DESC
+   LIMIT 10)
